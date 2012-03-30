@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    version='0.1'
+    version='0.1',
     name='dynamicsites',
     version=version,
     description="Host multiple sites from a single django project",
