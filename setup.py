@@ -1,10 +1,7 @@
-import os
-import sys
 from distutils.core import setup
 
-version = __import__('dynamicsites').get_version()
-
 setup(
+    version='0.1'
     name='dynamicsites',
     version=version,
     description="Host multiple sites from a single django project",
