@@ -4,7 +4,7 @@ setup(
     version='0.1',
     name='dynamicsites',
     description="Host multiple sites from a single django project",
-    url='https://bitbucket.org/uysrc/django-dynamicsites',
+    url='https://github.com/lubico-business/django-dynamicsites',
     platforms=['any'],
     packages=['dynamicsites'],
 )
