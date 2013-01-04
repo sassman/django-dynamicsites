@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.core.cache import cache
 from django.contrib.sites.models import Site
@@ -6,19 +8,20 @@ from django.shortcuts import render_to_response
 from django.utils.cache import patch_vary_headers
 from django.utils.http import urlquote
 from utils import make_tls_property
-
-import logging
 import os
 
+
 SITE_ID = settings.__dict__['_wrapped'].__class__.SITE_ID = make_tls_property()
+ROOT_URLCONF = settings.__dict__['_wrapped'].__class__.ROOT_URLCONF = make_tls_property(settings.ROOT_URLCONF)
 TEMPLATE_DIRS = settings.__dict__['_wrapped'].__class__.TEMPLATE_DIRS = make_tls_property(settings.TEMPLATE_DIRS)
 
 class DynamicSitesMiddleware(object):
     """
-    Sets settings.SITE_ID based on request's domain.
-    Also handles hostname redirects, and ensures the 
+    Sets settings.SITE_ID based on request's domain
+    Also handles hostname redirects, and ensures the
     proper subdomain is requested for the site
     """
+
     def process_request(self, request):
         self.logger = logging.getLogger(__name__)
         self.HOSTNAME_REDIRECTS = getattr(settings, "HOSTNAME_REDIRECTS", None)
@@ -32,7 +35,7 @@ class DynamicSitesMiddleware(object):
         self.env_domain_requested = None
         self._old_TEMPLATE_DIRS = getattr(settings, "TEMPLATE_DIRS", None)
 
-        # main loop - lookup the site by domain/subdomain, plucking 
+        # main loop - lookup the site by domain/subdomain, plucking
         # subdomains off the request hostname until a site or
         # redirect is found
         res = self.lookup()
@@ -53,64 +56,67 @@ class DynamicSitesMiddleware(object):
         # At this point res can be either None, meaning we have a site,
         # or an HttpResponsePermanentRedirect obj
 
-        if self.site:
+        site = self.site
+        if site:
             # we have a site
-            self.logger.debug('Using site id=%s domain=%s',
-                self.site.id,
-                self.site.domain)
-                
-            # check to make sure the subdomain is supported
-            if self.site.has_subdomains:
-                gotta_redirect = False
-                if not self.subdomain and "''" not in self.site.subdomains:
-                    gotta_redirect = True
-                if self.subdomain and self.subdomain not in self.site.subdomains:
-                    gotta_redirect = True
-                if gotta_redirect:
-                    # if not, redirect to default subdomain
-                    self.logger.debug(
-                        'Redirecting to default_subdomain=%s',
-                        self.site.default_subdomain)
-                    return self.redirect(self.domain,
-                        subdomain=self.site.default_subdomain)
-                
+            self.logger.debug('Using site id=%s domain=%s default_subdomain=%s',
+                site.id,
+                site.domain,
+                site.default_subdomain)
+
+            if self.subdomain and site.default_subdomain != self.subdomain:
+                # check to make sure the subdomain is supported
+                if site.has_subdomains:
+                    gotta_redirect = False
+                    if not self.subdomain and "''" not in site.subdomains:
+                        gotta_redirect = True
+                    if self.subdomain and self.subdomain not in site.subdomains:
+                        gotta_redirect = True
+                    if gotta_redirect:
+                        # if not, redirect to default subdomain
+                        self.logger.debug('Redirecting to default_subdomain=%s',
+                            site.default_subdomain)
+                        return self.redirect(self.domain,
+                                             subdomain=site.default_subdomain)
+
             # make sure the domain requested is the subdomain/domain 
             # (ie. domain_unsplit) we used to locate the site
             if self.domain_requested is not self.domain_unsplit:
                 # if not redirect to the subdomain/domain 
                 # (ie. domain_unsplit) we used to locate the site
                 self.logger.debug('%s does not match %s.  Redirecting to %s',
-                    self.domain_requested,
-                    self.domain_unsplit,
-                    self.domain_unsplit)                    
+                                  self.domain_requested,
+                                  self.domain_unsplit,
+                                  self.domain_unsplit)
                 return self.redirect(self.domain_unsplit)
-            # keep copies of these for other apps/middleware to use
+                # keep copies of these for other apps/middleware to use
             self.request.domain_unsplit = self.domain_unsplit
             self.request.domain = self.domain
             self.request.subdomain = (self.subdomain) and self.subdomain or ''
             self.request.port = self.port
 
-            if self.site.folder_name:
-                folder_name = self.site.folder_name
+            if site.folder_name:
+                folder_name = site.folder_name
                 # set from where urlconf will be loaded if it exists
                 try:
-                    urlconf_pkg = '%s.urls' % folder_name
-                    __import__("sites.%s" % urlconf_pkg)
-                    self.logger.debug('using sites.%s for urlconf',
-                        urlconf_pkg)
+                    urlconf_pkg = 'sites.%s.urls' % folder_name
+                    __import__(urlconf_pkg)
+                    self.logger.debug('using %s for urlconf',
+                                      urlconf_pkg)
                     self.request.urlconf = urlconf_pkg
+                    ROOT_URLCONF.value = urlconf_pkg
+                    self.logger.debug('current ROOT_URLCONF=%s' % settings.ROOT_URLCONF)
                 except ImportError:
                     # urlconf doesn't exist... skip it
-                    self.logger.debug(
-                        'cannot find sites.%s.urls for urlconf... skipping',
-                        folder_name)
+                    self.logger.debug('cannot find sites.%s.urls for urlconf... skipping',
+                                      folder_name)
                     pass
-                # add site templates dir to TEMPLATE_DIRS
+                    # add site templates dir to TEMPLATE_DIRS
                 self.logger.debug(
-                    'adding %s to TEMPLATE_DIRS', 
+                    'adding %s to TEMPLATE_DIRS',
                     os.path.join(settings.SITES_DIR, folder_name, 'templates'))
                 TEMPLATE_DIRS.value = (os.path.join(settings.SITES_DIR,
-                    folder_name, 'templates'),) + TEMPLATE_DIRS.value
+                                                    folder_name, 'templates'),) + TEMPLATE_DIRS.value
 
         return res
 
@@ -121,8 +127,12 @@ class DynamicSitesMiddleware(object):
         """
         if getattr(request, "urlconf", None):
             patch_vary_headers(response, ('Host',))
-        # reset TEMPLATE_DIRS because we unconditionally add to it when
+            # reset TEMPLATE_DIRS because we unconditionally add to it when
         # processing the request
+
+        settings.ROOT_URLCONF = ROOT_URLCONF.value
+        self.logger.debug('applied ROOT_URLCONF=%s' % settings.ROOT_URLCONF)
+
         try:
             if self._old_TEMPLATE_DIRS is not None:
                 settings.TEMPLATE_DIRS = self._old_TEMPLATE_DIRS
@@ -134,7 +144,7 @@ class DynamicSitesMiddleware(object):
     def get_domain_and_port(self):
         """
         Django's request.get_host() returns the requested host and possibly the
-        port number.  Return a tuple of domain, port number.  
+        port number.  Return a tuple of domain, port number
         Domain will be lowercased
         """
         host = self.request.get_host()
@@ -142,45 +152,47 @@ class DynamicSitesMiddleware(object):
             domain, port = host.split(':')
             return (domain.lower(), port)
         else:
-            return (host.lower(), 
-                self.request.META.get('SERVER_PORT'))
-
+            return (host.lower(),
+                    self.request.META.get('SERVER_PORT'))
 
     def lookup(self):
         """
-        The meat of this middleware.
-        
+        The meat of this middleware
+
         Returns None and sets settings.SITE_ID if able to find a Site
-        object by domain and its subdomain is valid.
-        
+        object by domain and its subdomain is valid
+
         Returns an HttpResponsePermanentRedirect to the Site's default
-        subdomain if a site is found but the requested subdomain 
-        is not supported, or if domain_unsplit is defined in 
+        subdomain if a site is found but the requested subdomain
+        is not supported, or if domain_unsplit is defined in
         settings.HOSTNAME_REDIRECTS
 
-        Otherwise, returns False.
+        Otherwise, returns False
         """
 
+        domain = self.domain
         self.logger.debug('ENV_HOSTNAMES lookup subdomain=%s domain=%s domain_unsplit=%s',
-            self.subdomain, self.domain, self.domain_unsplit)
+                          self.subdomain, domain, self.domain_unsplit)
         # check to see if this hostname is actually a env hostname
-        if self.ENV_HOSTNAMES and self.domain in self.ENV_HOSTNAMES:
+        if self.ENV_HOSTNAMES and domain in self.ENV_HOSTNAMES:
+            a, b, c, d = self.ENV_HOSTNAMES, domain, self, dir(self)
             self.logger.debug('Got a ENV_HOSTNAME %s:%s',
-                self.domain, self.ENV_HOSTNAMES[self.domain])
+                              domain, self.ENV_HOSTNAMES[domain])
             # reset subdomain, domain, and domain_unsplit
-            self.domain = self.ENV_HOSTNAMES[self.domain]
+            domain = self.ENV_HOSTNAMES[domain]
             if self.subdomain:
-                self.domain_unsplit = '%s.%s' % (self.subdomain, self.domain)
+                self.domain_unsplit = '%s.%s' % (self.subdomain, domain)
             else:
-                self.domain_unsplit = self.domain
+                self.domain_unsplit = domain
 
+            self.domain = domain
             self.env_domain_requested = self.domain_requested
             self.domain_requested = self.domain_unsplit
 
         # check to see if this hostname redirects
         if self.HOSTNAME_REDIRECTS and self.domain_unsplit in self.HOSTNAME_REDIRECTS:
             self.logger.debug('Found HOSTNAME_REDIRECT %s=>%s',
-               self.domain_unsplit, self.HOSTNAME_REDIRECTS[self.domain_unsplit])
+                              self.domain_unsplit, self.HOSTNAME_REDIRECTS[self.domain_unsplit])
             return self.redirect(self.HOSTNAME_REDIRECTS[self.domain_unsplit])
 
         # check cache
@@ -188,8 +200,8 @@ class DynamicSitesMiddleware(object):
         site_id = cache.get(cache_key)
         if site_id:
             self.logger.debug('Found site_id=%s from cache.get(\'%s\')',
-                site_id,
-                cache_key)
+                              site_id,
+                              cache_key)
             SITE_ID.value = site_id
             try:
                 self.site = Site.objects.get(id=site_id)
@@ -204,7 +216,7 @@ class DynamicSitesMiddleware(object):
         # check database
         try:
             self.logger.debug(
-                'Checking database for domain=%s', 
+                'Checking database for domain=%s',
                 self.domain)
             self.site = Site.objects.get(domain=self.domain)
         except Site.DoesNotExist:
@@ -213,7 +225,7 @@ class DynamicSitesMiddleware(object):
             return False
 
         SITE_ID.value = self.site.pk
-        cache.set(cache_key, SITE_ID.value, 5*60)
+        cache.set(cache_key, SITE_ID.value, 5 * 60)
         return None
 
     def _redirect(self, new_host, subdomain=None):
@@ -250,9 +262,9 @@ class DynamicSitesMiddleware(object):
             new_host,
             (int(self.port) not in (80, 443)) and ':%s' % self.port or '',
             urlquote(self.request.path),
-            (self.request.method == 'GET' 
-                and len(self.request.GET) > 0) 
-                    and '?%s' % self.request.GET.urlencode() or ''
+            (self.request.method == 'GET'
+             and len(self.request.GET) > 0)
+            and '?%s' % self.request.GET.urlencode() or ''
         ))
 
     def redirect(self, new_host, subdomain=None):
@@ -262,26 +274,26 @@ class DynamicSitesMiddleware(object):
         """
         if self.env_domain_requested:
             self.logger.debug('Remapping %s to ENV_HOSTNAME %s',
-                new_host,
-                self.env_domain_requested)
+                              new_host,
+                              self.env_domain_requested)
             # does a env_hostname exist for the target redirect?
             target_domain = '%s%s' % ((subdomain and subdomain is not "''") and '%s.' % subdomain or '', new_host)
             target_env_hostname = self.find_env_hostname(target_domain)
-            target_subdomain=None
-            while not target_env_hostname and target_domain:
-                target_subdomain, target_domain = target_domain.split('.',1)
+            target_subdomain = None
+            while not target_env_hostname and '.' in target_domain:
+                target_subdomain, target_domain = target_domain.split('.', 1)
                 target_env_hostname = self.find_env_hostname(target_domain)
             if target_env_hostname:
                 self.logger.debug(
-                    'Redirecting to target env_hostname=%s, subdomain=%s', 
-                    target_env_hostname, 
+                    'Redirecting to target env_hostname=%s, subdomain=%s',
+                    target_env_hostname,
                     target_subdomain)
                 return self._redirect(target_env_hostname,
-                                     subdomain=target_subdomain)
-            # unable to find env_hostname for target redirect... 
+                                      subdomain=target_subdomain)
+                # unable to find env_hostname for target redirect...
             # fall through to redirect to target redirect
             self.logger.debug(
-                'No ENV_HOSTNAME map found for %s', 
+                'No ENV_HOSTNAME map found for %s',
                 new_host)
         return self._redirect(new_host, subdomain)
 
