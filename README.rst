@@ -39,8 +39,8 @@ Installation
     pip install -e git://github.com/lubico-business/django-dynamicsites.git#egg=django-dynamicsites
 
 
-Configuration
--------------
+Setup
+-----
 
  1. Before you install django-dynamicsites, make sure you have configured at least 1 site in the admin panel, because once django-dynamicsites is installed, it will try to lookup a site from request.get_host(), and, if none exists, will always throw 404
 
