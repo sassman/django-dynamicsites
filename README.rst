@@ -1,7 +1,7 @@
-dynamicsites
-============
+django-dynamicsites
+===================
 
-By UYSRC <http://www.uysrc.com/>
+Original code is derived from UYSRC <http://www.uysrc.com/> and come from https://bitbucket.org/uysrc/django-dynamicsites
 
 Host multiple sites from a single django project 
 
@@ -16,10 +16,23 @@ Expands the standard django.contrib.sites package to allow for:
  * A single site may accept requests from multiple hostnames
  * Allows for environment hostname mappings to use non-production hostnames (for use in dev, staging, test, etc. environments)
 
+More Info
+---------
+
+More info can be found here:  http://blog.uysrc.com/2011/03/23/serving-multiple-sites-with-django/
+
+
+Django Compatibility
+--------------------
+
+this current source has been tested and patched for working well with ``Django==1.4.3``.  This means in general it
+should work with older versions of Django as well.
+
+
 Configuration
 -------------
 
- 1. Before you install dynamicsites, make sure you have configured at least 1 site in the admin panel, because once dynamicsites is installed, it will try to lookup a site from request.get_host(), and, if none exists, will always throw 404
+ 1. Before you install django-dynamicsites, make sure you have configured at least 1 site in the admin panel, because once django-dynamicsites is installed, it will try to lookup a site from request.get_host(), and, if none exists, will always throw 404
 
  2. Add the app to INSTALLED_APPS ::
 
@@ -47,7 +60,7 @@ Configuration
         SITES_DIR = os.path.join(os.path.dirname(__file__), 'sites')
         DEFAULT_HOST = 'www.your-default-site.com'
         HOSTNAME_REDIRECTS = {
-        #    'redirect-src-1.com':         'www.redirect-dest-1.com',
+            'redirect-src-1.com':         'www.redirect-dest-1.com',
             ...
         }
 
@@ -72,14 +85,14 @@ Configuration
 Configuration
 -------------
 
-Using dynamicsites you can host multiple sites within a single domain.  This may be the most common setup.  This will allow different url mappings by subdomain.  To do this you'll need to create a site object for the different subdomain sites.
+Using django-dynamicsites you can host multiple sites within a single domain in terms of vhost configuration.  This may be the most common setup.  This will allow different url mappings by subdomain.  To do this you'll need to create a site object for the different subdomain sites.
 
 Within the list of subdomains for a site, the first subdomain listed will be the default subdomain.  If you want the default subdomain to be blank, put '' (single quote empty string) as the first subdomain in the subdomain list in the admin panel for sites.
 
 Debugging
 ---------
 
-In the current codebase, if you have the django debug toolba unstalled and enable redirect tracking, ie. 
+In the current codebase, if you have the django debug toolbar installed and want enable redirect tracking, ie.
 
 ::
 
@@ -94,15 +107,16 @@ There's also a view included with the codebase which is useful for checking whic
     from dynamicsites.views import site_info
 
     urlpatterns += patterns('',
-        url(r'^site-info$', site_info),)
+        url(r'^site-info/$', site_info),
+    )
 
 Notes
 -----
 
 * you need to run syncdb after dynamicsites is installed (to be sure the fields folder_name and subdomains is added to the standard Site model)
-* in sites folder, each folder must have a __init__.py file.
+* in sites folder and each sub folder must have a __init__.py file (except the templates folder)
 
-More Info
----------
+Thanks
+------
 
-More info can be found here:  http://blog.uysrc.com/2011/03/23/serving-multiple-sites-with-django/
+i want to thanks the guys form UYSRC <http://www.uysrc.com/> for tier great work. Good Job!
