@@ -19,7 +19,9 @@ Expands the standard django.contrib.sites package to allow for:
 More Info
 ---------
 
-More info can be found here:  http://blog.uysrc.com/2011/03/23/serving-multiple-sites-with-django/
+More info can be found here: http://blog.uysrc.com/2011/03/23/serving-multiple-sites-with-django/
+
+Original Sources: https://bitbucket.org/uysrc/django-dynamicsites
 
 
 Django Compatibility
@@ -27,6 +29,14 @@ Django Compatibility
 
 this current source has been tested and patched for working well with ``Django==1.4.3``.  This means in general it
 should work with older versions of Django as well.
+
+
+Installation
+------------
+
+::
+
+    pip install -e git://github.com/lubico-business/django-dynamicsites.git#egg=django-dynamicsites
 
 
 Configuration
