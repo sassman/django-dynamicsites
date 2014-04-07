@@ -22,6 +22,8 @@ class DynamicSitesMiddleware(object):
     proper subdomain is requested for the site
     """
 
+    logger = None
+
     def process_request(self, request):
         self.logger = logging.getLogger(__name__)
         self.HOSTNAME_REDIRECTS = getattr(settings, "HOSTNAME_REDIRECTS", None)
@@ -131,7 +133,8 @@ class DynamicSitesMiddleware(object):
         # processing the request
 
         settings.ROOT_URLCONF = ROOT_URLCONF.value
-        self.logger.debug('applied ROOT_URLCONF=%s' % settings.ROOT_URLCONF)
+        if self.logger:
+            self.logger.debug('applied ROOT_URLCONF=%s' % settings.ROOT_URLCONF)
 
         try:
             if self._old_TEMPLATE_DIRS is not None:
