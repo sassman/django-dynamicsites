@@ -34,4 +34,10 @@ def default_subdomain(self):
 Site.has_subdomains = has_subdomains
 Site.default_subdomain = default_subdomain
 
-
+try: 
+    import south
+    from south.modelsinspector import add_introspection_rules
+    add_introspection_rules([], ["^dynamicsites\.fields\.FolderNameField"])
+    add_introspection_rules([], ["^dynamicsites\.fields\.SubdomainListField"])
+except:
+    pass
