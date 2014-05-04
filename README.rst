@@ -1,11 +1,22 @@
+=============================
 django-dynamicsites
-===================
+=============================
 
-Original code is derived from UYSRC <http://www.uysrc.com/> and come from https://bitbucket.org/uysrc/django-dynamicsites
+.. image:: https://badge.fury.io/py/django-dynamicsites.png
+    :target: https://badge.fury.io/py/django-dynamicsites
 
-Host multiple sites from a single django project 
+.. image:: https://travis-ci.org/sassman/django-dynamicsites.png
+    :target: https://travis-ci.org/sassman/django-dynamicsites
 
-Expands the standard django.contrib.sites package to allow for:
+.. image:: https://coveralls.io/repos/sassman/django-dynamicsites/badge.png
+    :target: https://coveralls.io/r/sassman/django-dynamicsites
+
+Host multiple sites from a single django project.
+
+Using django-dynamicsites you can host multiple sites within a single
+domain in terms of vhost configuration. This may be the most common setup to allow different url mappings by subdomain.
+
+Expands the standard ``django.contrib.sites`` package to allow for:
 
  * Sites identified dynamically from the request via middleware
  * No need for multiple virtual hosts at the webserver level
@@ -16,117 +27,20 @@ Expands the standard django.contrib.sites package to allow for:
  * A single site may accept requests from multiple hostnames
  * Allows for environment hostname mappings to use non-production hostnames (for use in dev, staging, test, etc. environments)
 
-More Info
----------
+Credits
+-------
 
+Original code is derived from UYSRC <http://www.uysrc.com/> and come from https://bitbucket.org/uysrc/django-dynamicsites
 More info can be found here: http://blog.uysrc.com/2011/03/23/serving-multiple-sites-with-django/
 
-Original Sources: https://bitbucket.org/uysrc/django-dynamicsites
-
-
-Django Compatibility
---------------------
-
-this current source has been tested and patched for working well with ``Django==1.4.3``.  This means in general it
-should work with older versions of Django as well.
-
-
-Installation
-------------
-
-::
-
-    pip install -e git://github.com/lubico-business/django-dynamicsites.git#egg=django-dynamicsites
-
-
-Setup
------
-
- 1. Before you install django-dynamicsites, make sure you have configured at least 1 site in the admin panel, because once django-dynamicsites is installed, it will try to lookup a site from request.get_host(), and, if none exists, will always throw 404
-
- 2. Add the app to INSTALLED_APPS ::
-
-        INSTALLED_APPS = (
-            ...
-            'dynamicsites',
-        )
-
- 3. Add the middleware to MIDDLEWARE_CLASSES ::
-    
-        MIDDLEWARE_CLASSES = (
-            ...
-            'dynamicsites.middleware.DynamicSitesMiddleware'
-        )
-
- 4. Add the context processor to TEMPLATE_CONTEXT_PROCESSORS ::
-
-        TEMPLATE_CONTEXT_PROCESSORS = (
-            ...
-            'dynamicsites.context_processors.current_site',
-        )
-
- 5. Configure dynamicsites by adding SITES_DIR, DEFAULT_HOST, and HOSTNAME_REDIRECTS to settings.py ::
-
-        SITES_DIR = os.path.join(os.path.dirname(__file__), 'sites')
-        DEFAULT_HOST = 'www.your-default-site.com'
-        HOSTNAME_REDIRECTS = {
-            'redirect-src-1.com':         'www.redirect-dest-1.com',
-            ...
-        }
-
- 6. If your local environment (eg. test, dev, staging) uses different hostnames than production, set the ENV_HOSTNAMES map as well ::
-
-        ENV_HOSTNAMES = {
-            'my-site.dev':    'www.your-default-site.com',
-            ...
-        }
-
- 7. make ``sites`` dir (from the SITES_DIR setting above) and put a ``__init__.py`` file inside
-
- 8. make a site dir for each site you're hosting (eg. ``mkdir sites/{{mysyte}}``) <-- you'll put ``{{mysyte}}`` in the admin screen when you go to configure mysyte there.  Make sure to put an ``__init__.py`` file in each site dir as well.
-
- 9. run ``syncdb``.  If your django_site table fails to modify, you will need to modify the table via sql::
-
-        alter table django_site add column folder_name varchar(255);
-        alter table django_site add column subdomains varchar(255);
-        
- 10. go to the admin panel for sites.  You should see two fields added now, one for the site folder name (#8 above) and another for which subdomains you wish to support
-
-Configuration
+Documentation
 -------------
 
-Using django-dynamicsites you can host multiple sites within a single domain in terms of vhost configuration.  This may be the most common setup.  This will allow different url mappings by subdomain.  To do this you'll need to create a site object for the different subdomain sites.
+The full documentation is at https://django-dynamicsites.readthedocs.org.
 
-Within the list of subdomains for a site, the first subdomain listed will be the default subdomain.  If you want the default subdomain to be blank, put '' (single quote empty string) as the first subdomain in the subdomain list in the admin panel for sites.
+Quickstart
+----------
 
-Debugging
----------
+Install django-dynamicsites::
 
-In the current codebase, if you have the django debug toolbar installed and want enable redirect tracking, ie.
-
-::
-
-    DEBUG_TOOLBAR_CONFIG = {
-        'INTERCEPT_REDIRECTS': True,
-    }
-
-django-dynamicsites will intercept redirects, which is very helpful when dialing in your site config.
-
-There's also a view included with the codebase which is useful for checking which site dynamicsites thinks you're seeing.  Just add an entry to your urls.py file::
-
-    from dynamicsites.views import site_info
-
-    urlpatterns += patterns('',
-        url(r'^site-info/$', site_info),
-    )
-
-Notes
------
-
-* you need to run syncdb after dynamicsites is installed (to be sure the fields folder_name and subdomains is added to the standard Site model)
-* in sites folder and each sub folder must have a __init__.py file (except the templates folder)
-
-Thanks
-------
-
-i want to thanks the guys form UYSRC <http://www.uysrc.com/> for tier great work. Good Job!
+    pip install django-dynamicsites
