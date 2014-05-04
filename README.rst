@@ -6,10 +6,10 @@ django-dynamicsites
     :target: https://badge.fury.io/py/django-dynamicsites
 
 .. image:: https://travis-ci.org/sassman/django-dynamicsites.png
-    :target: https://travis-ci.org/sassman/django-dynamicsites
+    :target: https://travis-ci.org/lubico-business/django-dynamicsites
 
 .. image:: https://coveralls.io/repos/sassman/django-dynamicsites/badge.png
-    :target: https://coveralls.io/r/sassman/django-dynamicsites
+    :target: https://coveralls.io/r/lubico-business/django-dynamicsites
 
 Host multiple sites from a single django project.
 
