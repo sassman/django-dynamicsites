@@ -31,6 +31,7 @@ def configure():
         'SITE_ID': 1,
         'NOSE_ARGS': ['-s'],
         'SITES_DIR': os.path.join(os.path.dirname(__file__), 'sites'),
+        'SITES_MODULE': 'tests',
         'DEFAULT_HOST': 'www.corp-umbrella-site.com',
         'HOSTNAME_REDIRECTS': {
             'aboutfood.com': 'www.about-food.com',

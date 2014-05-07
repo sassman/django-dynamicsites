@@ -12,13 +12,18 @@ from django.core.exceptions import ValidationError
 from django.forms import ModelForm
 from django.test.testcases import TestCase
 from django.utils import unittest
-from dynamicsites.forms import CommaSeparatedSubDomainFormField
+from dynamicsites.forms import CommaSeparatedSubDomainFormField, FolderNameFormField
+from dynamicsites.widgets import SubdomainTextarea, FolderNameInput
 
 
 class TestCommaSeparatedSubDomainFormField(TestCase):
 
     def field(self):
         return CommaSeparatedSubDomainFormField()
+
+    def test_defaults(self):
+        field = self.field()
+        self.assertEqual(type(field.widget), SubdomainTextarea)
 
     def test_to_python(self):
         field = self.field()
@@ -55,6 +60,37 @@ class TestCommaSeparatedSubDomainFormField(TestCase):
             field.validate(string_value)
         string_value = u'a, b'
         field.validate(string_value)
+
+
+class TestFolderNameField(TestCase):
+    def field(self):
+        return FolderNameFormField()
+
+    def test_defaults(self):
+        field = self.field()
+        self.assertEqual(type(field.widget), FolderNameInput)
+
+    def test_to_python(self):
+        field = self.field()
+        self.assertEqual(field.to_python(None), None)
+        self.assertEqual(field.to_python('abc'), 'abc')
+        self.assertEqual(field.to_python('aBc'), 'abc')
+        self.assertEqual(field.to_python('ABC'), 'abc')
+        self.assertEqual(field.to_python('A!C'), 'a!c')
+        self.assertEqual(field.to_python('A!C '), 'a!c')
+        self.assertEqual(field.to_python(' A!C '), 'a!c')
+        self.assertEqual(field.to_python(' A!C'), 'a!c')
+
+    def test_validate(self):
+        field = self.field()
+        with self.assertRaises(ValidationError):
+            field.validate('b')
+        with self.assertRaises(ValidationError):
+            field.validate('d')
+        with self.assertRaises(ValidationError):
+            field.validate('!"§$%')
+        field.validate('a')
+        field.validate('c')
 
 
 @unittest.skip('skip for now')

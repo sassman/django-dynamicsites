@@ -3,6 +3,9 @@ import re
 import logging
 
 from django import forms
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.utils import importlib
 from django.utils.translation import ugettext_lazy as _
 
 from .widgets import SubdomainTextarea, FolderNameInput
@@ -80,11 +83,16 @@ class FolderNameFormField(forms.CharField):
         Verifies if the folder name exists by trying to
         do an import
         """
-        valid = super(FolderNameFormField, self).validate(value)
-        if not value or not valid or re.search(r"[^a-z0-9_]", value):
+        super(FolderNameFormField, self).validate(value)
+        if not value or not re.search(r'\w+', value):
+            logger.debug('folder name given: {0}'.format(value))
             raise ValidationError('The folder name must only contain letters, numbers, or underscores')
         try:
-            __import__("sites.{0}".format(value))
+            site_module = getattr(settings, 'SITES_MODULE', '')
+            if site_module:
+                site_module += '.'
+            importlib.import_module('{0}sites.{1}'.format(site_module, value))
+            # __import__('tests.sites.{0}'.format(value))
         except ImportError:
             raise ValidationError(
                 'The folder sites/{0}/ does not exist or is missing the __init__.py file'.format(value)

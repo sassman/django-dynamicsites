@@ -83,3 +83,19 @@ Notes
 
 * you need to run syncdb after dynamicsites is installed (to be sure the fields folder_name and subdomains is added to the standard Site model)
 * in sites folder and each sub folder must have a __init__.py file (except the templates folder)
+
+Settings Keys Explained
+-----------------------
+
+::
+
+    SITES_MODULE = 'module.where.sites.live'
+
+- default value: ``''``
+
+- purpose: define where the sites/* folder exists that are used for subdomain specific overwrites. Such as urls.py etc.
+
+- when to set: only needed if your ``sites`` folder does not live in your django root dir
+
+
+
