@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError
 from django.forms import ModelForm
 from django.test.testcases import TestCase
 from django.utils import unittest
-from dynamicsites.forms import SubdomainListFormField, FolderNameFormField
+from dynamicsites.forms import FolderNameFormField, CommaSeparatedSubDomainFormField
 
 
 class TestSiteModel(TestCase):
@@ -79,7 +79,7 @@ class TestSiteModel(TestCase):
                 model = Site
         site_form = SiteForm()
         formfield = site_form.fields['subdomains']
-        self.assertEqual(type(formfield), SubdomainListFormField)
+        self.assertEqual(type(formfield), CommaSeparatedSubDomainFormField)
 
         formfield = site_form.fields['folder_name']
         self.assertEqual(type(formfield), FolderNameFormField)

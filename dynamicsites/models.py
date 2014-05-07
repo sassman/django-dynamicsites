@@ -3,8 +3,8 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.sites.models import Site
 
-from .forms import SubdomainListFormField, FolderNameFormField
-from .validators import validate_comma_separated_slug_list
+from .forms import CommaSeparatedSubDomainFormField, FolderNameFormField
+
 
 """
 Monkey-patch the Site object to include a list of subdomains
@@ -32,12 +32,11 @@ def default_subdomain(self):
 
 
 class SubdomainListField(models.TextField):
-    default_validators = [validate_comma_separated_slug_list]
     description = _("Comma-separated Subdomains")
 
     def formfield(self, **kwargs):
         defaults = {
-            'form_class': SubdomainListFormField,
+            'form_class': CommaSeparatedSubDomainFormField,
             'error_messages': {
                 'invalid': _('Enter only subdomains separated by commas.'),
             }

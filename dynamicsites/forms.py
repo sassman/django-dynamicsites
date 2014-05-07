@@ -3,59 +3,58 @@ import re
 import logging
 
 from django import forms
-from django.core.validators import URLValidator, ValidationError, RegexValidator
+from django.utils.translation import ugettext_lazy as _
+
 from .widgets import SubdomainTextarea, FolderNameInput
+from .validators import SubDomainValidator
 
 
 logger = logging.getLogger(__name__)
 
 
-class SubdomainListFormField(forms.Field):
-    def __init__(self, *args, **kwargs):
-        kwargs['widget'] = SubdomainTextarea()
-        super(SubdomainListFormField, self).__init__(*args, **kwargs)
-
+class CommaSeparatedSubDomainFormField(forms.Field):
     """
     A form field to accept a string of subdomains, separated by commas
     If blank or an asterisk '*', allow all subdomains
     """
+    description = _("Comma-separated sub domains")
+
+    def __init__(self, *args, **kwargs):
+        kwargs['widget'] = SubdomainTextarea()
+        super(CommaSeparatedSubDomainFormField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
         """
-        return list of subdomains
+
+        return list of sub domains. splitting string by \n \r or ','
         """
         if not value:
-            return []
+            value = ''
 
-        # convert newlines to commas
-        value = re.sub("\n|\r", ',', value)
+        if not isinstance(value, (list, tuple, set)):
+            # strip whitespaces
+            value = re.sub(' ', '', str(value))
+            # split by
+            value = re.split('\n|\r|,', value)
+            list_value = [v for v in value if v is not '*' and v]
+        else:
+            list_value = list(value)
 
-        # clean incoming subdomains
-        subdomains = []
-        for subdomain in value.split(','):
-            subdomain = subdomain.strip().lower()
-            if subdomain and subdomain is not '*':
-                subdomains.append(subdomain)
-        return subdomains
+        return list_value
 
     def validate(self, value):
         """
-        Uses URLValidator to validate subdomains
-        """
-        # TODO Make a SubdomainValidator as a subclass of
-        # URLValidator and use it both in model and form fields (ala URLField)
-        super(SubdomainListFormField, self).validate(value)
+        Uses SubDomainValidator to validate a list of sub domains
 
-        u = URLValidator()
+        :param value: list of sub domains
+        :type value: list tuple set str
+        """
+        value = self.to_python(value)
+        super(CommaSeparatedSubDomainFormField, self).validate(value)
+
+        validate = SubDomainValidator()
         for subdomain in value:
-            logger.debug('validating %s', subdomain)
-            if subdomain == "''":
-                logger.debug('passing')
-                pass
-            else:
-                test_host = 'http://%s.example.com/' % subdomain
-                logger.debug('testing %s', test_host)
-                u(test_host)
+            validate(subdomain)
 
 
 class FolderNameFormField(forms.CharField):
@@ -71,7 +70,9 @@ class FolderNameFormField(forms.CharField):
         """
         return value stripped of leading/trailing whitespace, and lowercased
         """
-        return value.strip().lower()
+        if value:
+            value = value.strip().lower()
+        return value
 
     def validate(self, value):
         """
@@ -79,11 +80,12 @@ class FolderNameFormField(forms.CharField):
         Verifies if the folder name exists by trying to
         do an import
         """
-        super(FolderNameFormField, self).validate(value)
-
-        if re.search(r"[^a-z0-9_]", value):
+        valid = super(FolderNameFormField, self).validate(value)
+        if not value or not valid or re.search(r"[^a-z0-9_]", value):
             raise ValidationError('The folder name must only contain letters, numbers, or underscores')
         try:
-            __import__("sites.%s" % value)
+            __import__("sites.{0}".format(value))
         except ImportError:
-            raise ValidationError('The folder sites/%s/ does not exist or is missing the __init__.py file' % value)
+            raise ValidationError(
+                'The folder sites/{0}/ does not exist or is missing the __init__.py file'.format(value)
+            )
