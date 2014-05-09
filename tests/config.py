@@ -28,6 +28,7 @@ def configure():
         'TEMPLATE_CONTEXT_PROCESSORS': parent.TEMPLATE_CONTEXT_PROCESSORS + (
             'dynamicsites.context_processors.current_site',
         ),
+        'ROOT_URLCONF': 'tests.urls',
         'SITE_ID': 1,
         'NOSE_ARGS': ['-s'],
         'SITES_DIR': os.path.join(os.path.dirname(__file__), 'sites'),
