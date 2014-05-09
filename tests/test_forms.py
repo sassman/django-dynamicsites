@@ -93,7 +93,7 @@ class TestFolderNameField(TestCase):
         field.validate('c')
 
 
-@unittest.skip('skip for now')
+@unittest.skip('TODO rewrite to see only if a ModelForm will utilize fields as expected')
 class TestSiteForm(TestCase):
 
     def setUp(self):

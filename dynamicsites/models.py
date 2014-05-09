@@ -16,20 +16,6 @@ Future ideas include:
 * Account subdomains (ala basecamp)
 """
 
-@property
-def has_subdomains(self):
-    return len(self.subdomains) > 0
-
-
-@property
-def default_subdomain(self):
-    """
-    Return the first subdomain in self.subdomains or '' if no subdomains defined
-    """
-    if len(self.subdomains):
-        return self.subdomains[0]
-    return ''
-
 
 class SubdomainListField(models.TextField):
     description = _("Comma-separated Subdomains")
@@ -65,6 +51,25 @@ class FolderNameField(models.CharField):
 # Site.add_to_class('subdomains', SubdomainListField(blank=True))
 FolderNameField(blank=True).contribute_to_class(Site, 'folder_name')
 SubdomainListField(blank=True).contribute_to_class(Site, 'subdomains')
+
+@property
+def has_subdomains(self):
+    """
+    checks if a Site has subdomains set
+    :param self: site instance
+    :return:
+    """
+    return len(self.subdomains) > 0
+
+
+@property
+def default_subdomain(self):
+    """
+    Return the first subdomain in self.subdomains or '' if no subdomains defined
+    """
+    if len(self.subdomains):
+        return self.subdomains[0]
+    return ''
 
 Site.has_subdomains = has_subdomains
 Site.default_subdomain = default_subdomain
