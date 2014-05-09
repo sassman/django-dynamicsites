@@ -31,10 +31,10 @@ class TestCommaSeparatedSubDomainFormField(TestCase):
         self.assertEqual(field.to_python(None), [])
         list_value = ['a', 'b']
         self.assertEqual(field.to_python(list_value), list_value)
-        set_value = ('a', 'b')
-        self.assertEqual(field.to_python(set_value), list_value)
-        tuple_value = {'a', 'b'}
-        self.assertListEqual(sorted(field.to_python(tuple_value)), list_value)
+        tuple_value = ('a', 'b')
+        self.assertEqual(field.to_python(tuple_value), list_value)
+        set_value = set(list_value)
+        self.assertListEqual(sorted(field.to_python(set_value)), list_value)
         string_value = 'a, b,,'
         self.assertEqual(field.to_python(string_value), list_value)
         string_value = 'a,                      b'
