@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+import os
 import logging
 
 from django.conf import settings
@@ -7,13 +9,14 @@ from django.http import HttpResponsePermanentRedirect, Http404
 from django.shortcuts import render_to_response
 from django.utils.cache import patch_vary_headers
 from django.utils.http import urlquote
-from utils import make_tls_property
-import os
+
+from .utils import make_tls_property
 
 
 SITE_ID = settings.__dict__['_wrapped'].__class__.SITE_ID = make_tls_property()
 ROOT_URLCONF = settings.__dict__['_wrapped'].__class__.ROOT_URLCONF = make_tls_property(settings.ROOT_URLCONF)
 TEMPLATE_DIRS = settings.__dict__['_wrapped'].__class__.TEMPLATE_DIRS = make_tls_property(settings.TEMPLATE_DIRS)
+
 
 class DynamicSitesMiddleware(object):
     """
@@ -60,9 +63,9 @@ class DynamicSitesMiddleware(object):
         if site:
             # we have a site
             self.logger.debug('Using site id=%s domain=%s default_subdomain=%s',
-                site.id,
-                site.domain,
-                site.default_subdomain)
+                              site.id,
+                              site.domain,
+                              site.default_subdomain)
 
             if self.subdomain and site.default_subdomain != self.subdomain:
                 # check to make sure the subdomain is supported
@@ -75,14 +78,14 @@ class DynamicSitesMiddleware(object):
                     if gotta_redirect:
                         # if not, redirect to default subdomain
                         self.logger.debug('Redirecting to default_subdomain=%s',
-                            site.default_subdomain)
+                                          site.default_subdomain)
                         return self.redirect(self.domain,
                                              subdomain=site.default_subdomain)
 
-            # make sure the domain requested is the subdomain/domain 
+            # make sure the domain requested is the subdomain/domain
             # (ie. domain_unsplit) we used to locate the site
             if self.domain_requested is not self.domain_unsplit:
-                # if not redirect to the subdomain/domain 
+                # if not redirect to the subdomain/domain
                 # (ie. domain_unsplit) we used to locate the site
                 self.logger.debug('%s does not match %s.  Redirecting to %s',
                                   self.domain_requested,
@@ -229,7 +232,7 @@ class DynamicSitesMiddleware(object):
         return None
 
     def _redirect(self, new_host, subdomain=None):
-        """experimental: 
+        """experimental:
         wrapper around _redirect_real to throw up
         any django debug toolbar redirect notices.
         Note todo: this is not properly respecting
@@ -253,7 +256,7 @@ class DynamicSitesMiddleware(object):
 
     def _redirect_real(self, new_host, subdomain=None):
         """
-        Tries its best to preserve request protocol, port, path, 
+        Tries its best to preserve request protocol, port, path,
         and query args.  Only works with HTTP GET
         """
         return HttpResponsePermanentRedirect('%s://%s%s%s%s%s' % (
