@@ -6,6 +6,7 @@ test_django-dynamicsites
 
 Tests for `django-dynamicsites` forms module.
 """
+import sys
 
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
@@ -33,7 +34,7 @@ class TestCommaSeparatedSubDomainFormField(TestCase):
         set_value = ('a', 'b')
         self.assertEqual(field.to_python(set_value), list_value)
         tuple_value = {'a', 'b'}
-        self.assertEqual(field.to_python(tuple_value), list_value)
+        self.assertListEqual(sorted(field.to_python(tuple_value)), list_value)
         string_value = 'a, b,,'
         self.assertEqual(field.to_python(string_value), list_value)
         string_value = 'a,                      b'
@@ -81,14 +82,25 @@ class TestFolderNameField(TestCase):
         self.assertEqual(field.to_python(' A!C '), 'a!c')
         self.assertEqual(field.to_python(' A!C'), 'a!c')
 
-    def test_validate(self):
+    def test_validate_not_exists_site_folder(self):
         field = self.field()
         with self.assertRaises(ValidationError):
             field.validate('b')
+
+    @unittest.skipIf(sys.version_info > (3, 3), 'since that version all dirs are valid '
+                                                'packages even without __init__.py')
+    def test_validate_invalid_package_site_folder(self):
+        field = self.field()
         with self.assertRaises(ValidationError):
             field.validate('d')
+
+    def test_validate_invalid_folder_name(self):
+        field = self.field()
         with self.assertRaises(ValidationError):
             field.validate('!"§$%')
+
+    def test_validate_successfully(self):
+        field = self.field()
         field.validate('a')
         field.validate('c')
 
